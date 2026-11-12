@@ -2,8 +2,6 @@ from acervo.domain.livro import Livro
 
 
 class LivroRepository:
-    """Armazena e consulta livros em memória."""
-
     def __init__(self) -> None:
         livros_iniciais = [
             Livro(
