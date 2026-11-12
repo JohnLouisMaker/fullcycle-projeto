@@ -1,0 +1,320 @@
+openapi: 3.0.3
+info:
+  title: Acervo de Livros
+  version: 1.1.0
+  description: >-
+    API REST para cadastrar, pesquisar, atualizar e remover livros. Os dados são
+    mantidos em memória e reiniciados ao reiniciar a aplicação.
+servers:
+  - url: http://localhost:8000
+    description: Execução local padrão
+tags:
+  - name: Livros
+    description: Operações do acervo de livros
+  - name: Sistema
+    description: Verificações da aplicação
+paths:
+  /health:
+    get:
+      tags: [Sistema]
+      summary: Verificar saúde da API
+      operationId: verificarSaude
+      responses:
+        "200":
+          description: API disponível
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [status]
+                properties:
+                  status:
+                    type: string
+                    enum: [ok]
+                    example: ok
+  /livros:
+    get:
+      tags: [Livros]
+      summary: Listar livros
+      operationId: listarLivros
+      parameters:
+        - name: busca
+          in: query
+          description: Busca sem distinção entre maiúsculas/minúsculas no título, autor ou categoria.
+          required: false
+          schema:
+            type: string
+            minLength: 1
+            maxLength: 120
+        - name: categoria
+          in: query
+          description: Filtro de categoria, comparado sem distinção entre maiúsculas/minúsculas.
+          required: false
+          schema:
+            type: string
+            minLength: 1
+            maxLength: 80
+        - name: status
+          in: query
+          description: Situação do livro.
+          required: false
+          schema:
+            $ref: "#/components/schemas/StatusLivro"
+        - name: ano_publicacao
+          in: query
+          required: false
+          schema:
+            type: integer
+            minimum: 1000
+            maximum: 9999
+        - name: limite
+          in: query
+          description: Quantidade máxima de registros retornados.
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 20
+        - name: deslocamento
+          in: query
+          description: Número de registros a ignorar antes de iniciar a página.
+          required: false
+          schema:
+            type: integer
+            minimum: 0
+            default: 0
+      responses:
+        "200":
+          description: Lista de livros, ordenada pelo ID em ordem crescente.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Livro"
+              example:
+                - id: 1
+                  titulo: O Hobbit
+                  autor: J. R. R. Tolkien
+                  categoria: Fantasia
+                  ano_publicacao: 1937
+                  status: disponível
+        "422":
+          $ref: "#/components/responses/ErroValidacao"
+    post:
+      tags: [Livros]
+      summary: Cadastrar livro
+      operationId: cadastrarLivro
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/LivroCriacao"
+            example:
+              id: 4
+              titulo: A Sociedade do Anel
+              autor: J. R. R. Tolkien
+              categoria: Fantasia
+              ano_publicacao: 1954
+              status: disponível
+      responses:
+        "201":
+          description: Livro cadastrado.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Livro"
+        "409":
+          description: Já existe um livro com o ID informado.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErroHTTP"
+              example:
+                detail: Já existe um livro com id 4.
+        "422":
+          $ref: "#/components/responses/ErroValidacao"
+  /livros/{livro_id}:
+    parameters:
+      - name: livro_id
+        in: path
+        required: true
+        description: Identificador positivo do livro.
+        schema:
+          type: integer
+          minimum: 1
+    get:
+      tags: [Livros]
+      summary: Buscar livro
+      operationId: buscarLivro
+      responses:
+        "200":
+          description: Livro encontrado.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Livro"
+        "404":
+          $ref: "#/components/responses/LivroNaoEncontrado"
+        "422":
+          $ref: "#/components/responses/ErroValidacao"
+    put:
+      tags: [Livros]
+      summary: Atualizar livro
+      operationId: atualizarLivro
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/LivroAtualizacao"
+            example:
+              titulo: "O Hobbit: edição revisada"
+              autor: J. R. R. Tolkien
+              categoria: Fantasia
+              ano_publicacao: 1937
+              status: emprestado
+      responses:
+        "200":
+          description: Livro atualizado.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Livro"
+        "404":
+          $ref: "#/components/responses/LivroNaoEncontrado"
+        "422":
+          $ref: "#/components/responses/ErroValidacao"
+    delete:
+      tags: [Livros]
+      summary: Remover livro
+      operationId: removerLivro
+      responses:
+        "204":
+          description: Livro removido; resposta sem corpo.
+        "404":
+          $ref: "#/components/responses/LivroNaoEncontrado"
+        "422":
+          $ref: "#/components/responses/ErroValidacao"
+components:
+  schemas:
+    StatusLivro:
+      type: string
+      enum: [disponível, emprestado]
+    Livro:
+      type: object
+      additionalProperties: false
+      required: [id, titulo, autor, categoria, ano_publicacao, status]
+      properties:
+        id:
+          type: integer
+          minimum: 1
+        titulo:
+          type: string
+        autor:
+          type: string
+        categoria:
+          type: string
+        ano_publicacao:
+          type: integer
+          minimum: 1000
+          maximum: 9999
+        status:
+          $ref: "#/components/schemas/StatusLivro"
+    LivroCriacao:
+      type: object
+      additionalProperties: false
+      required: [id, titulo, autor, categoria, ano_publicacao, status]
+      properties:
+        id:
+          type: integer
+          minimum: 1
+        titulo:
+          type: string
+          minLength: 1
+          maxLength: 200
+        autor:
+          type: string
+          minLength: 1
+          maxLength: 160
+        categoria:
+          type: string
+          minLength: 1
+          maxLength: 80
+        ano_publicacao:
+          type: integer
+          minimum: 1000
+          maximum: 9999
+        status:
+          $ref: "#/components/schemas/StatusLivro"
+    LivroAtualizacao:
+      type: object
+      additionalProperties: false
+      required: [titulo, autor, categoria, ano_publicacao, status]
+      properties:
+        titulo:
+          type: string
+          minLength: 1
+          maxLength: 200
+        autor:
+          type: string
+          minLength: 1
+          maxLength: 160
+        categoria:
+          type: string
+          minLength: 1
+          maxLength: 80
+        ano_publicacao:
+          type: integer
+          minimum: 1000
+          maximum: 9999
+        status:
+          $ref: "#/components/schemas/StatusLivro"
+    ErroHTTP:
+      type: object
+      required: [detail]
+      properties:
+        detail:
+          type: string
+    ErroValidacao:
+      type: object
+      required: [detail]
+      properties:
+        detail:
+          type: array
+          items:
+            type: object
+            required: [loc, msg, type]
+            properties:
+              loc:
+                type: array
+                items:
+                  oneOf:
+                    - type: string
+                    - type: integer
+              msg:
+                type: string
+              type:
+                type: string
+              input: {}
+              ctx:
+                type: object
+                additionalProperties: true
+                nullable: true
+  responses:
+    ErroValidacao:
+      description: Parâmetro, caminho ou corpo inválido.
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErroValidacao"
+    LivroNaoEncontrado:
+      description: Livro não encontrado.
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErroHTTP"
+          example:
+            detail: Livro com id 999 não encontrado.
