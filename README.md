@@ -43,9 +43,9 @@ python -m pip install -r requirements.txt "httpx>=0.27,<1.0" "pytest>=8.0,<9.0"
 pytest -q
 ```
 
-No Windows PowerShell, ative o ambiente virtual com `.venv\Scripts\Activate.ps1`. Os testes usam o `TestClient` do FastAPI e não precisam que a API esteja rodando separadamente.
+Para uma saída mais detalhada, execute `pytest -v` no lugar de `pytest -q`.
 
-Para repetir o smoke test de desempenho, mantenha a API em execução, instale o [Grafana k6](https://grafana.com/docs/k6/latest/set-up/install-k6/) e execute `k6 run tests/k6-smoke-test.js`. O relatório e a saída da execução registrada estão listados abaixo.
+No Windows PowerShell, ative o ambiente virtual com `.venv\Scripts\Activate.ps1`. Os testes usam o `TestClient` do FastAPI e não precisam que a API esteja rodando separadamente.
 
 ## Documentação e evidências
 
